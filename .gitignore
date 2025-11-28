@@ -1,0 +1,15 @@
+# System Files
+.DS_Store
+.vscode/
+# Ignore Python bytecode files
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore __pycache__ directories
+__pycache__/
+
+# Scratch Files
+url_OO.py
+url.py
+UMEA_web_scrape.py
