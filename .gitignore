@@ -8,8 +8,3 @@
 
 # Ignore __pycache__ directories
 __pycache__/
-
-# Scratch Files
-url_OO.py
-url.py
-UMEA_web_scrape.py
