@@ -45,7 +45,8 @@ class RecapPage:
             raise RuntimeError("Call fetch() before parse_header().")
 
         division = self._table_rows[0].get_text(strip=True)
-
+        test = self._extract_row_text(6)
+        #print(test)
         captions = self._extract_row_text(2)
         sub_captions = self._extract_row_text(3)
         judges = self._extract_row_text(4)
@@ -91,7 +92,43 @@ class RecapPage:
         ]
         # filter out empty values
         return [t for t in texts if t]
+    
+    def _parse_score_row(self, row: Tag) -> List[str]:
+        """
+        Given a <tr> for a band, return:
+        [school, city_state, score1, rank1, score2, rank2, ...]
+        using the nested scoreTable structure.
+        """
+        # only top-level <td> in this row – do NOT recurse into nested tables yet
+        outer_cells = row.find_all("td", recursive=False)
 
+        if len(outer_cells) < 3:
+            raise ValueError(
+                "Unexpected row structure, not enough top-level cells.")
+
+        school = outer_cells[0].get_text(strip=True)
+        city_state = outer_cells[1].get_text(strip=True)
+
+        values: List[str] = [school, city_state]
+
+        # every remaining outer cell should contain a nested scoreTable
+        for cell in outer_cells[2:]:
+            score_td = cell.find("td", class_="content score")
+            rank_td = cell.find("td", class_="content rank")
+
+            if score_td and rank_td:
+                score = score_td.get(
+                    "data-translate-number") or score_td.get_text(strip=True)
+                rank = rank_td.get_text(strip=True)
+                values.extend([score, rank])
+            else:
+                # optional: debug / fail fast rather than silently swallowing structure changes
+                text = cell.get_text(strip=True)
+                if text:
+                    values.append(text)
+
+        return values
+    
 
 class TransformHeader:
     """Transforms RecapHeader.table_headers using prefixes built from sub_captions."""
@@ -110,85 +147,72 @@ class TransformHeader:
             prefix = "".join(first_chunks)
             prefix_list.append(prefix)
         return prefix_list
-
-    def apply(self, header: RecapHeader) -> List[str]:
-        """
-        Use sub_captions to build prefix_list, then apply your header renaming logic.
-        Mutates header.renamed_headers and returns the new list.
-        """
-        if not header.sub_captions:
-            raise ValueError(
-                "Header must have sub_captions before transformation.")
-
+    
+    def update_header(self, header: RecapHeader) -> List[str]: #59 lines
         captions_list = header.captions
-        # copy so we don't trash the original
-        table_header_list = list(header.table_headers)
 
         # Build prefix_list from the header itself
         prefix_list = self._build_prefix_list(header.sub_captions)
 
-        # ---------- Your existing renaming logic using prefix_list + captions_list ----------
+        # copy so we don't trash the original
+        table_header_list = list(header.table_headers)
 
-        # Music Caption
-        table_header_list[0] = f'{prefix_list[0]}_{table_header_list[0]}'
-        table_header_list[1] = f'{prefix_list[0]}_{table_header_list[1]}'
-        table_header_list[2] = f'{prefix_list[0]}_{table_header_list[2]}'
+        # (caption_index, prefix_index, num_columns, has sub_rank, has_caption_total)
+        blocks = [
+            (0, 0, 3, True, False),  # Music + MusEns
+            (0, 1, 4, True, True),   # Music + MusEff
+            (1, 2, 3, True, False),  # Visual + VisEns
+            (1, 3, 4, True, True),   # Visual + VisEff
+            (2, 4, 4, False, True),   # Percussion + Per
+            (3, 5, 4, False, True),   # Color Guard + ColGua
+            #(5, 6, 2, False, False),   # Penalties + Pen
+        ]
+        #print(blocks)
+        new_headers = []
+        idx = 0  # pointer into table_header_list
 
-        table_header_list.insert(3, f'{prefix_list[0]}_rank')
+        for cap_idx, pre_idx, n_cols, has_sub_rank, has_caption_total in blocks:
+            caption = captions_list[cap_idx]
+            prefix = prefix_list[pre_idx]
 
-        table_header_list[4] = f'{prefix_list[1]}_{table_header_list[4]}'
-        table_header_list[5] = f'{prefix_list[1]}_{table_header_list[5]}'
-        table_header_list[6] = f'{prefix_list[1]}_{table_header_list[6]}'
+            # Take the next n_cols raw headers for this block
+            cols = table_header_list[idx:idx + n_cols]
+            idx += n_cols #resetting current index
 
-        table_header_list.insert(7, f'{prefix_list[1]}_rank')
+            # If the block has a caption total, treat the last column as total
+            if has_caption_total:
+                judge_cols = cols[:-1]
+                total_col = cols[-1]
+            else:
+                judge_cols = cols
+                total_col = None
 
-        table_header_list[8] = f'{captions_list[0]}_{table_header_list[8]}al'
-        table_header_list.insert(9, f'{captions_list[0]}_rank')
+            # 1) Prefix judge columns: MusEns_Musc, MusEns_Tech, MusEns_*Tot, etc.
+            for c in judge_cols:
+                new_headers.append(f'{prefix}_{c}_score')
+                new_headers.append(f'{prefix}_{c}_rank')
 
-        # Music Effect Caption
-        table_header_list[10] = f'{prefix_list[2]}_{table_header_list[10]}'
-        table_header_list[11] = f'{prefix_list[2]}_{table_header_list[11]}'
-        table_header_list[12] = f'{prefix_list[2]}_{table_header_list[12]}'
 
-        table_header_list.insert(13, f'{prefix_list[2]}_rank')
+            # 2) Add a rank for this judge block
+            #if has_sub_rank: 
+            #new_headers.append(f'{prefix}_rank')
 
-        table_header_list[14] = f'{prefix_list[3]}_{table_header_list[14]}'
-        table_header_list[15] = f'{prefix_list[3]}_{table_header_list[15]}'
-        table_header_list[16] = f'{prefix_list[3]}_{table_header_list[16]}'
+            # 3) If this block ends in a caption total, rename it and add a caption rank
+            if total_col is not None:
+                # e.g. "Music_Total" (you were adding 'al' at the end, so mirror that)
+                new_headers.append(f'{caption}_{total_col}al')
+                new_headers.append(f'{caption}_Rank')
 
-        table_header_list.insert(17, f'{prefix_list[3]}_rank')
+        # Global totals and subtotals at the very end
+        new_headers.insert(0,'city/state')
+        new_headers.insert(0, 'school')
 
-        table_header_list[18] = f'{captions_list[1]}_{table_header_list[18]}al'
-        table_header_list.insert(19, f'{captions_list[1]}_rank')
+        new_headers.append('SubTotal')
+        new_headers.append('SubTotal_Rank')
+        new_headers.append('Penalties')
+        new_headers.append('Penalties_Total')
 
-        # Percussion Caption
-        table_header_list[20] = f'{prefix_list[4]}_{table_header_list[20]}'
-        table_header_list[21] = f'{prefix_list[4]}_{table_header_list[21]}'
-        table_header_list[22] = f'{prefix_list[4]}_{table_header_list[22]}'
+        new_headers.append('Total')
+        new_headers.append('Rank')
 
-        table_header_list[23] = f'{captions_list[2]}_{table_header_list[23]}al'
-        table_header_list.insert(24, f'{captions_list[2]}_rank')
-
-        # Color Guard Caption
-        table_header_list[25] = f'{prefix_list[5]}_{table_header_list[25]}'
-        table_header_list[26] = f'{prefix_list[5]}_{table_header_list[26]}'
-        table_header_list[27] = f'{prefix_list[5]}_{table_header_list[27]}'
-
-        table_header_list[28] = f'{captions_list[3]}_{table_header_list[28]}al'
-        table_header_list.insert(29, f'{captions_list[3]}_rank')
-
-        # Sub Total
-        table_header_list.insert(30, captions_list[4])
-        table_header_list.insert(31, f'{captions_list[4]}_rank')
-
-        # Penalty
-        table_header_list[32] = f'{prefix_list[6]}_{table_header_list[32]}'
-        table_header_list[33] = f'{captions_list[5]}_{table_header_list[33]}al'
-
-        # Final total + rank
-        table_header_list.append('Total')
-        table_header_list.append('Rank')
-
-        # Save result on header and return it
-        header.renamed_headers = table_header_list
-        return table_header_list
+        return(new_headers)

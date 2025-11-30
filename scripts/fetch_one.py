@@ -11,14 +11,14 @@ def fetch_one_line():
   header = recap.parse_header()
 
   transformer = TransformHeader()
-  renamed_headers = transformer.apply(header)
-
-  print("Division:", header.division)
-  print("Captions: ", header.captions)
-  print("Sub-Captions: ", header.sub_captions)
-  print("Judges: ", header.judges)
+  renamed_header = transformer.update_header(header)
+  #print("Division:", header.division)
+  #print("Captions: ", header.captions)
+  #print("Sub-Captions: ", header.sub_captions)
+  #print("Judges: ", header.judges)
   print("Raw headers:", header.table_headers)
-  print("Renamed headers:", renamed_headers)
+
+  print("Renamed Headers:", renamed_header)
   #"""
   #print("good by")
   return ("Hi Sam!")
