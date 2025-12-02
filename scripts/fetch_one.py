@@ -12,6 +12,13 @@ def fetch_one_line():
 
   transformer = TransformHeader()
   renamed_header = transformer.update_header(header)
+  header.renamed_headers = renamed_header
+
+  #recap.parse_scores
+
+  #parse data rows (scores)
+  rows = recap.parse_scores(first_data_row=6)
+  print(rows)
   #print("Division:", header.division)
   #print("Captions: ", header.captions)
   #print("Sub-Captions: ", header.sub_captions)

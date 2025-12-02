@@ -14,10 +14,6 @@ class RecapHeader:
     table_headers: List[str]          # raw headers from the HTML
     renamed_headers: List[str] = field(default_factory=list)  # optional processed version
 
-
-    
-
-
 class RecapPage:
     def __init__(self, url: str, table_index: int = 1):
         self.url = url
@@ -60,6 +56,60 @@ class RecapPage:
             table_headers=table_headers,
         )
         return self.header
+    
+    def parse_scores(self, first_data_row: int = 6) -> List[List[str]]:
+        """
+        Parse all band rows into a list of lists.
+        Each inner list matches the order from _parse_score_row.
+        """
+        if self._table is None or not self._table_rows:
+            raise RuntimeError("Call fetch() before parse_scores().")
+
+        data_rows: List[List[str]] = []
+
+        for row in self._table_rows[first_data_row:]:
+            # stop if you hit an empty row or some footer – adjust as needed
+            
+            if not row.find_all("td"):
+                continue
+            print('row', self._parse_score_row(row))
+            parsed = self._parse_score_row(row)
+            # skip rows that are just blanks
+            print('Parsed - - - ', parsed)
+            if len(parsed) >= 3:
+                data_rows.append(parsed)
+
+        return data_rows
+    
+    def load_recap(url: str) -> List[dict]:
+        page = RecapPage(url)
+        page.fetch()
+
+        # 1) parse header info from the table
+        header = page.parse_header()
+
+        # 2) transform header names
+        transformer = TransformHeader()
+        renamed_headers = transformer.update_header(header)
+        header.renamed_headers = renamed_headers  # optional, for later reuse
+
+        # 3) parse data rows (scores)
+        rows = page.parse_scores(first_data_row=6)
+
+        # 4) zip headers + row values into records
+        records: List[dict] = []
+        for row_values in rows:
+            if len(row_values) != len(renamed_headers):
+                # This is where you want to catch structural mismatches early
+                raise ValueError(
+                    f"Header/data length mismatch: {len(renamed_headers)} headers vs "
+                    f"{len(row_values)} values"
+                )
+            records.append(dict(zip(renamed_headers, row_values)))
+
+        return records
+
+
 
     # ---------- Internal helpers ----------
 
@@ -99,12 +149,13 @@ class RecapPage:
         [school, city_state, score1, rank1, score2, rank2, ...]
         using the nested scoreTable structure.
         """
+        #print(row.text)
         # only top-level <td> in this row – do NOT recurse into nested tables yet
         outer_cells = row.find_all("td", recursive=False)
-
-        if len(outer_cells) < 3:
-            raise ValueError(
-                "Unexpected row structure, not enough top-level cells.")
+        #print('outer:', outer_cells)
+        #if len(outer_cells) < 3:
+         #   raise ValueError(
+          #      "Unexpected row structure, not enough top-level cells.")
 
         school = outer_cells[0].get_text(strip=True)
         city_state = outer_cells[1].get_text(strip=True)
