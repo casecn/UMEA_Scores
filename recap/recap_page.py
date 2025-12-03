@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
+import pandas as pd
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -56,12 +57,65 @@ class RecapPage:
             table_headers=table_headers,
         )
         return self.header
-    
+    #########################
+
+
     def parse_scores(self, first_data_row: int = 6) -> List[List[str]]:
+        print("First Row: ", first_data_row)
+        if self._table is None or not self._table_rows:
+            raise RuntimeError("Call fetch() before parse_scores().")
+
+        data_rows: List[List[str]] = []
+
+        for idx, row in enumerate(self._table_rows[first_data_row:], start=first_data_row):
+            # Look only at top-level cells, same as _parse_score_row
+            outer_cells = row.find_all("td", recursive=False)
+
+            # Skip rows that don't have at least school + city/state
+            if len(outer_cells) < 2:
+                # Optional debug:
+                # print(f"Skipping row {idx}: only {len(outer_cells)} top-level <td> cells")
+                continue
+
+            parsed = self._parse_score_row(row)
+
+            if len(parsed) >= 3:
+                data_rows.append(parsed)
+
+        return data_rows
+
+
+    def _parse_score_row(self, row: Tag) -> List[str]:
+        outer_cells = row.find_all("td", recursive=False)
+
+        school = outer_cells[0].get_text(strip=True)
+        city_state = outer_cells[1].get_text(strip=True)
+
+        values: List[str] = [school, city_state]
+
+        for cell in outer_cells[2:]:
+            score_td = cell.find("td", class_="content score")
+            rank_td = cell.find("td", class_="content rank")
+
+            if score_td and rank_td:
+                score = score_td.get(
+                    "data-translate-number") or score_td.get_text(strip=True)
+                rank = rank_td.get_text(strip=True)
+                values.extend([score, rank])
+            else:
+                text = cell.get_text(strip=True)
+                if text:
+                    values.append(text)
+
+        return values
+
+########################################
+    """ def parse_scores(self, first_data_row: int = 6) -> List[List[str]]:
         """
-        Parse all band rows into a list of lists.
-        Each inner list matches the order from _parse_score_row.
-        """
+       # Parse all band rows into a list of lists.
+       # Each inner list matches the order from _parse_score_row.
+    """
+        print("First Row: ", first_data_row)
         if self._table is None or not self._table_rows:
             raise RuntimeError("Call fetch() before parse_scores().")
 
@@ -69,19 +123,22 @@ class RecapPage:
 
         for row in self._table_rows[first_data_row:]:
             # stop if you hit an empty row or some footer – adjust as needed
-            
+            #print(row.find_all("td"))
             if not row.find_all("td"):
                 continue
-            print('row', self._parse_score_row(row))
+            #print('row', self._parse_score_row(row))
             parsed = self._parse_score_row(row)
             # skip rows that are just blanks
-            print('Parsed - - - ', parsed)
+            #print('Parsed - - - ', parsed)
             if len(parsed) >= 3:
                 data_rows.append(parsed)
 
         return data_rows
+        """
     
-    def load_recap(url: str) -> List[dict]:
+    @staticmethod
+
+    def load_recap(url: str) -> pd.DataFrame:
         page = RecapPage(url)
         page.fetch()
 
@@ -106,8 +163,9 @@ class RecapPage:
                     f"{len(row_values)} values"
                 )
             records.append(dict(zip(renamed_headers, row_values)))
+        df = pd.DataFrame.from_records(records)
 
-        return records
+        return df
 
 
 
@@ -143,42 +201,6 @@ class RecapPage:
         # filter out empty values
         return [t for t in texts if t]
     
-    def _parse_score_row(self, row: Tag) -> List[str]:
-        """
-        Given a <tr> for a band, return:
-        [school, city_state, score1, rank1, score2, rank2, ...]
-        using the nested scoreTable structure.
-        """
-        #print(row.text)
-        # only top-level <td> in this row – do NOT recurse into nested tables yet
-        outer_cells = row.find_all("td", recursive=False)
-        #print('outer:', outer_cells)
-        #if len(outer_cells) < 3:
-         #   raise ValueError(
-          #      "Unexpected row structure, not enough top-level cells.")
-
-        school = outer_cells[0].get_text(strip=True)
-        city_state = outer_cells[1].get_text(strip=True)
-
-        values: List[str] = [school, city_state]
-
-        # every remaining outer cell should contain a nested scoreTable
-        for cell in outer_cells[2:]:
-            score_td = cell.find("td", class_="content score")
-            rank_td = cell.find("td", class_="content rank")
-
-            if score_td and rank_td:
-                score = score_td.get(
-                    "data-translate-number") or score_td.get_text(strip=True)
-                rank = rank_td.get_text(strip=True)
-                values.extend([score, rank])
-            else:
-                # optional: debug / fail fast rather than silently swallowing structure changes
-                text = cell.get_text(strip=True)
-                if text:
-                    values.append(text)
-
-        return values
     
 
 class TransformHeader:
@@ -261,8 +283,9 @@ class TransformHeader:
         new_headers.append('SubTotal')
         new_headers.append('SubTotal_Rank')
         new_headers.append('Penalties')
+        new_headers.append('SPACER')
         new_headers.append('Penalties_Total')
-
+        new_headers.append('SPACER')
         new_headers.append('Total')
         new_headers.append('Rank')
 
