@@ -110,31 +110,7 @@ class RecapPage:
         return values
 
 ########################################
-    """ def parse_scores(self, first_data_row: int = 6) -> List[List[str]]:
-        """
-       # Parse all band rows into a list of lists.
-       # Each inner list matches the order from _parse_score_row.
-    """
-        print("First Row: ", first_data_row)
-        if self._table is None or not self._table_rows:
-            raise RuntimeError("Call fetch() before parse_scores().")
 
-        data_rows: List[List[str]] = []
-
-        for row in self._table_rows[first_data_row:]:
-            # stop if you hit an empty row or some footer – adjust as needed
-            #print(row.find_all("td"))
-            if not row.find_all("td"):
-                continue
-            #print('row', self._parse_score_row(row))
-            parsed = self._parse_score_row(row)
-            # skip rows that are just blanks
-            #print('Parsed - - - ', parsed)
-            if len(parsed) >= 3:
-                data_rows.append(parsed)
-
-        return data_rows
-        """
     
     @staticmethod
 
@@ -164,7 +140,7 @@ class RecapPage:
                 )
             records.append(dict(zip(renamed_headers, row_values)))
         df = pd.DataFrame.from_records(records)
-
+        
         return df
 
 
