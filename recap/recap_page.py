@@ -61,7 +61,7 @@ class RecapPage:
 
 
     def parse_scores(self, first_data_row: int = 6) -> List[List[str]]:
-        print("First Row: ", first_data_row)
+        #print("First Row: ", first_data_row)
         if self._table is None or not self._table_rows:
             raise RuntimeError("Call fetch() before parse_scores().")
 
@@ -113,7 +113,6 @@ class RecapPage:
 
     
     @staticmethod
-
     def load_recap(url: str) -> pd.DataFrame:
         page = RecapPage(url)
         page.fetch()
@@ -133,12 +132,23 @@ class RecapPage:
         records: List[dict] = []
         for row_values in rows:
             if len(row_values) != len(renamed_headers):
+                #1. Log URL
+                with open("mismatched_header.txt", "a") as file:
+                    file.write(f'\n{url}')
+
+
+                #2. Truncate the row_values list to match renamed_headers list
+
+                #3 Proceed 
                 # This is where you want to catch structural mismatches early
-                raise ValueError(
+                """raise ValueError(
                     f"Header/data length mismatch: {len(renamed_headers)} headers vs "
                     f"{len(row_values)} values"
+                
                 )
+                """
             records.append(dict(zip(renamed_headers, row_values)))
+            #print(records)
         df = pd.DataFrame.from_records(records)
         
         return df
