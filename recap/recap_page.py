@@ -30,8 +30,15 @@ class RecapPage:
 
     def fetch(self) -> None:
         """Download the HTML and build the soup object."""
-        response = requests.get(self.url)
-        response.raise_for_status()
+        try:
+            response = requests.get(self.url)
+            #response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 403:
+                print(f'Caught a 403 Forbidden error: {e}')
+                # Handle the 403 error specifically (e.g., inform the user, log the event)
+            else:
+                print(f"Caught another HTTP error: {e}")
 
         self._soup = BeautifulSoup(response.text, "html.parser")
         self._set_table_of_interest()
@@ -56,6 +63,7 @@ class RecapPage:
             judges=judges,
             table_headers=table_headers,
         )
+        #####print(self.url, "------", self.header)
         return self.header
     #########################
 
@@ -110,50 +118,6 @@ class RecapPage:
         return values
 
 ########################################
-
-    
-    @staticmethod
-    def load_recap(url: str) -> pd.DataFrame:
-        page = RecapPage(url)
-        page.fetch()
-
-        # 1) parse header info from the table
-        header = page.parse_header()
-
-        # 2) transform header names
-        transformer = TransformHeader()
-        renamed_headers = transformer.update_header(header)
-        header.renamed_headers = renamed_headers  # optional, for later reuse
-
-        # 3) parse data rows (scores)
-        rows = page.parse_scores(first_data_row=6)
-
-        # 4) zip headers + row values into records
-        records: List[dict] = []
-        for row_values in rows:
-            if len(row_values) != len(renamed_headers):
-                #1. Log URL
-                with open("mismatched_header.txt", "a") as file:
-                    file.write(f'\n{url}')
-
-
-                #2. Truncate the row_values list to match renamed_headers list
-
-                #3 Proceed 
-                # This is where you want to catch structural mismatches early
-                """raise ValueError(
-                    f"Header/data length mismatch: {len(renamed_headers)} headers vs "
-                    f"{len(row_values)} values"
-                
-                )
-                """
-            records.append(dict(zip(renamed_headers, row_values)))
-            #print(records)
-        df = pd.DataFrame.from_records(records)
-        
-        return df
-
-
 
     # ---------- Internal helpers ----------
 
@@ -218,19 +182,19 @@ class TransformHeader:
 
         # (caption_index, prefix_index, num_columns, has sub_rank, has_caption_total)
         blocks = [
-            (0, 0, 3, True, False),  # Music + MusEns
-            (0, 1, 4, True, True),   # Music + MusEff
-            (1, 2, 3, True, False),  # Visual + VisEns
-            (1, 3, 4, True, True),   # Visual + VisEff
-            (2, 4, 4, False, True),   # Percussion + Per
-            (3, 5, 4, False, True),   # Color Guard + ColGua
-            #(5, 6, 2, False, False),   # Penalties + Pen
+            (0, 0, 3, False),  # Music + MusEns
+            (0, 1, 4, True),   # Music + MusEff
+            (1, 2, 3, False),  # Visual + VisEns
+            (1, 3, 4, True),   # Visual + VisEff
+            (2, 4, 4, True),   # Percussion + Per
+            (3, 5, 4, True),   # Color Guard + ColGua
+            (5, 6, 2, False),   # Penalties + Pen
         ]
         #print(blocks)
         new_headers = []
         idx = 0  # pointer into table_header_list
 
-        for cap_idx, pre_idx, n_cols, has_sub_rank, has_caption_total in blocks:
+        for cap_idx, pre_idx, n_cols, has_caption_total in blocks:
             caption = captions_list[cap_idx]
             prefix = prefix_list[pre_idx]
 
@@ -276,3 +240,58 @@ class TransformHeader:
         new_headers.append('Rank')
 
         return(new_headers)
+
+
+@staticmethod
+def load_recap(url: str) -> pd.DataFrame:
+    page = RecapPage(url)
+    page.fetch()
+
+    # 1) parse header info from the table
+    header = page.parse_header()
+
+    # 2) transform header names
+    transformer = TransformHeader()
+    renamed_headers = transformer.update_header(header)
+    header.renamed_headers = renamed_headers  # optional, for later reuse
+
+     # 3) parse data rows (scores)
+    rows = page.parse_scores(first_data_row=6)
+
+    # 4) zip headers + row values into records
+    records: List[dict] = []
+    for row_values in rows:
+        if len(row_values) != len(renamed_headers):
+            # 1. Log URL
+            with open("mismatched_header.txt", "a") as file:
+                file.write(f'\n{url}')
+
+            # 2. Truncate the row_values list to match renamed_headers list
+
+            # 3 Proceed
+            # This is where you want to catch structural mismatches early
+            """raise ValueError(
+                f"Header/data length mismatch: {len(renamed_headers)} headers vs "
+                f"{len(row_values)} values"
+
+            )
+            """
+            records.append(dict(zip(renamed_headers, row_values)))
+            # print(records)
+        df = pd.DataFrame.from_records(records)
+
+        return df
+    
+    @staticmethod
+    def load_multiple_recaps(urls: List[str]) -> pd.DataFrame:
+        df_list = []
+        for url in urls:
+            df = RecapPage.load_recap(url)
+            df = df.copy()
+            df["source_url"] = url
+            df_list.append(df)
+
+        if not df_list:
+            return pd.DataFrame()
+
+        return pd.concat(df_list, ignore_index=True)
