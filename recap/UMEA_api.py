@@ -4,7 +4,7 @@ import csv
 import json
 import random
 import time
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Iterable, Tuple
 
 import requests
 BASE = "https://bridge.competitionsuite.com/api/orgscores"
@@ -236,18 +236,37 @@ def iter_flattened_rows_for_season(season_id: str, season_name: str):
             for row in rows:
                 yield row
 
-"""
-all_unique_urls = set()
-i = 0
-for key, value in season_guid_dict.items():
-    #print(f"Key: {key}, Value: {value}")
-    season_urls = build_scores_csv(value, key, f'umea_marching_band_scores_{key}.csv')
-    all_unique_urls.update(season_urls)
+def accumulate_rows_and_guids(
+        row_iter: Iterable[dict],
+        guid_field: str,
+) -> Tuple[List[dict], Set[str]]:
+    '''
+    Consumes and iterator of row dict, accumlate:
+        - all rows in a list
+        - all non-empty GUIDs from `guid_field` in a set.
+        '''
+    
+    rows: List[dict] = []
+    guids: Set[str] = set()
 
-unique_urls_list = sorted(all_unique_urls)
-#print(f'Unique URL List: {unique_urls_list}')
-with open('umea_recap_guids.csv', mode='w', newline='') as file:
-    writer = csv.writer(file)
-    for item in unique_urls_list:
-        writer.writerow([item])
-"""
+    for row in row_iter:
+        rows.append(row)
+        guid = row.get(guid_field)
+        if guid:
+            guids.add(guid)
+
+    return rows, guids
+
+def write_scores_csv(rows: List[dict], out_path: str) -> None:
+    if not rows:
+        print('no rows collected, nothing to write.')
+        return
+
+    fieldnames = list(rows[0].keys())
+
+    with open(out_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    
+    print(f'Wrote {len(rows)} rows to {out_path}')
