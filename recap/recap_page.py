@@ -244,6 +244,9 @@ class TransformHeader:
 
 @staticmethod
 def load_recap(url: str) -> pd.DataFrame:
+    """
+    load_recap fetches the recap webpage, parses its scoring table, and returns the results as a clean pandas DataFrame.
+    """
     page = RecapPage(url)
     page.fetch()
 
@@ -282,12 +285,14 @@ def load_recap(url: str) -> pd.DataFrame:
 
     return df
     
-    @staticmethod
-    def load_multiple_recaps(urls: List[str]) -> pd.DataFrame:
+@staticmethod
+def load_multiple_recaps(urls: List[str]) -> pd.DataFrame:
+        '''
+        load_multiple_recaps takes a list of recap URLs, loads each one with load_recap, and combines all resulting DataFrames into a single DataFrame. It handles multiple recaps at once, stitching them into one unified table so you don’t process or analyze each recap separately.'''
         df_list = []
         for url in urls:
-            df = RecapPage.load_recap(url)
-            df = df.copy()
+            df = load_recap(url)
+            df = df.copy() #copy data frame
             df["source_url"] = url
             df_list.append(df)
 
