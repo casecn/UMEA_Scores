@@ -6,5 +6,7 @@
 *.pyo
 *.pyd
 
+# Ignore csv files
+*.csv
 # Ignore __pycache__ directories
 __pycache__/
