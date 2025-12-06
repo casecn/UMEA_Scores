@@ -276,11 +276,11 @@ def load_recap(url: str) -> pd.DataFrame:
 
             )
             """
-            records.append(dict(zip(renamed_headers, row_values)))
+        records.append(dict(zip(renamed_headers, row_values)))
             # print(records)
         df = pd.DataFrame.from_records(records)
 
-        return df
+    return df
     
     @staticmethod
     def load_multiple_recaps(urls: List[str]) -> pd.DataFrame:

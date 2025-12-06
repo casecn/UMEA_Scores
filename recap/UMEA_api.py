@@ -137,8 +137,8 @@ def flatten_competition_results(comp_data: dict, season_name: str = None):
 ################################################
 def collect_scores_and_round_guids(
     season_guid_dict: Dict[str, str],
-    scores_out_path: str = "umea_marching_band_scores_all_seasons.csv",
-    round_guids_out_path: str | None = "umea_recap_guids.csv",
+    scores_out_path: str = 'umea_marching_band_scores_all_seasons.csv',
+    round_guids_out_path: str | None = 'umea_recap_guids.csv',
 ) -> List[str]:
 
     """
@@ -151,71 +151,57 @@ def collect_scores_and_round_guids(
     all_rows: List[dict] = []
     all_round_guids: Set[str] = set()
     
-    # Loop through the SEASON_GUID_DICT dictionary
-    for season_name, season_id, in season_guid_dict.items():
-        for row in iter_flattened_rows_for_season(season_id, season_name):
-            all_rows.append(row)
+    # single iteragtor over all season' rows
+    def all_seasons_rows():
+        for season_name, season_id in season_guid_dict.items():
+            yield from iter_flattened_rows_for_season(season_id, season_name)
+    
+    # Accumulate rows + round GUIDs
 
-            guid = row.get("round_guid")
-            if guid: 
-                all_round_guids.add(guid)
+    all_rows, all_round_guids = accumulate_rows_and_guids(row_iter=all_seasons_rows(), guid_field='round_guid',
+    )
     
     if not all_rows:
         print('No rows collected, nothging to write.')
         return []
     
-    # Use the keys of the first row as the header
-    fieldnames = list (all_rows[0].keys())
-    print(fieldnames)
+    # Write CSVs
+    write_scores_csv(all_rows, scores_out_path)
 
-    #1) Write combined scores CSV
-    with open(scores_out_path, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(all_rows)
-    
-    print(f'Wrote {len(all_rows)} rows to {scores_out_path}')
-
-    # 2) Optionally write GUID list
-    sorted_guids = sorted(all_round_guids)
     if round_guids_out_path:
-        with open(round_guids_out_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            for guid in sorted_guids:
-                writer.writerow([guid])
-        print(f"Wrote {len(sorted_guids)} unique round GUIDs to {round_guids_out_path}")
+        write_guid_csv(all_round_guids, round_guids_out_path)
 
-    return sorted_guids
+    return sorted(all_round_guids)
+######################################
 
-def build_season_scores_csv(season_id: str, season_name: str, out_path: str):
-    competitions = get_competitions_for_season(season_id)
-    """Get scores for each season AND build csv containing all scores."""
-    #print(f'Competitions: {competitions}')
-    all_rows = []
-    unique_round_guid = set()
 
-    for row in iter_flattened_rows_for_season( season_id, season_name):
-        all_rows.append(row)
+def build_season_scores_csv(season_id: str, season_name: str, out_path: str) -> Set[str]:
+    """
+    Get scores for one season AND build a CSV containing all scores.
 
-        guid = row.get('division_guid')
-        if guid:
-            unique_round_guid(guid)
+    Returns:
+        Set of unique division GUIDs for that season (based on 'division_guid').
+    """
 
+    # Single season rows
+    row_iter = iter_flattened_rows_for_season(season_id, season_name)
+
+    # Accumuate rows + *divisiono* GUIDS
+    all_rows, unique_round_guids = accumulate_rows_and_guids(
+        row_iter=row_iter, 
+        guid_field='division_guid',
+    )
+    
     if not all_rows:
-        print("No rows collected, nothing to write.")
-        return
+        print('norows collected, nothing to write.')
+        return set()
+    
+    #Write the season's score CSV
+    write_scores_csv(all_rows, out_path)
 
-    fieldnames = list(all_rows[0].keys())
+    print(f'Found {len(unique_round_guids)} unique guids for {season_name}')
 
-    with open(out_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(all_rows)
-
-    print(f"Wrote {len(all_rows)} rows to {out_path}")
-    print(f"Found {len(unique_round_guid)} unique guids for {season_name}")
-
-    return unique_round_guid
+    return unique_round_guids
 
 
 def iter_flattened_rows_for_season(season_id: str, season_name: str):
@@ -270,3 +256,14 @@ def write_scores_csv(rows: List[dict], out_path: str) -> None:
         writer.writerows(rows)
     
     print(f'Wrote {len(rows)} rows to {out_path}')
+
+
+def write_guid_csv(guids: Set[str], out_path: str) -> None:
+    sorted_guids = sorted(guids)
+
+    with open(out_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        for guid in sorted_guids:
+            writer.writerow([guid])
+
+    print(f"Wrote {len(sorted_guids)} unique GUIDs to {out_path}")
