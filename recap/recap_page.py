@@ -1,13 +1,12 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 import pandas as pd
-
 import requests
 from bs4 import BeautifulSoup, Tag
 
-CITY_DICT = {'American Fork': 'American Fork, UT', 'Viewmont': 'Bountiful, UT', 'Gallatin': 'Bozeman, MT', 'Canyon View': 'Cedar City, UT', 'Clearfield': 'Clearfield, UT', 'Brighton': 'Cottonwood Heights, UT', 'Delta': 'Delta, UT', 'Cedar Valley': 'Eagle Mountain, UT', 'Elko': 'Elko, NV', 'Tintic': 'Eureka, UT', 'Farmington': 'Farmington, UT', 'Bear River': 'Garland, UT', 'Wasatch': 'Heber City, UT', 'Herriman': 'Herriman, UT', 'Mountain Ridge': 'Herriman, UT', 'Lone Peak': 'Highland, UT', 'Mountain Crest': 'Hyrum, UT', 'Davis': 'Kaysville, UT', 'Kearns': 'Kearns, UT', 'Lehi': 'Lehi, UT', 'Skyridge': 'Lehi, UT', 'Hillcrest': 'Midvale, UT', 'Ridgeline': 'Millville, UT', 'Green Canyon': 'North Logan, UT', 'Ogden': 'Ogden, UT', 'Orem': 'Orem, UT', 'Timpanogos': 'Orem, UT', 'Payson': 'Payson, UT', 'Pleasant Grove': 'Pleasant Grove, UT', 'Carbon': 'Price, UT', 'Provo': 'Provo, UT', 'Timpview': 'Provo, UT', 'Riverton': 'Riverton, UT', 'Salem Hills': 'Salem, UT', 'Alta': 'Sandy, UT', 'Westlake': 'Saratoga Springs, UT', 'Sky View': 'Smithfield, UT', 'Bingham': 'South Jordan, UT', 'Mountain Star': 'South Ogden, UT', 'Maple Mountain': 'Spanish Fork, UT', 'Spanish Fork': 'Spanish Fork, UT', 'Springville': 'Springville, UT', 'Stansbury': 'Stansbury, UT', 'Deseret Peak': 'Tooele, UT', 'Tooele': 'Tooele, UT', 'Uintah': 'Vernal, UT', 'Copper Hills': 'West Jordan, UT', 'West Jordan': 'West Jordan, UT', 'High Desert': 'Ammon, ID', 'Nampa': 'Nampa ID', 'Idaho Falls': 'Idaho Falls, ID', 'Columbia': 'Nampa, ID', 'Skyview (ID)': 'Nampa ID', 'Century': 'Pocatello, ID', 'Pocatello': 'Pocatello, ID', 'Timberline': 'Boise, ID', 'Madison': 'Rexburg, ID', 'Highland': 'Pocatello, ID'}
+CITY_DICT = {'American Fork': 'American Fork, UT', 'Viewmont': 'Bountiful, UT', 'Gallatin': 'Bozeman, MT', 'Canyon View': 'Cedar City, UT', 'Clearfield': 'Clearfield, UT', 'Brighton': 'Cottonwood Heights, UT', 'Delta': 'Delta, UT', 'Cedar Valley': 'Eagle Mountain, UT', 'Elko': 'Elko, NV', 'Tintic': 'Eureka, UT', 'Farmington': 'Farmington, UT', 'Bear River': 'Garland, UT', 'Wasatch': 'Heber City, UT', 'Herriman': 'Herriman, UT', 'Mountain Ridge': 'Herriman, UT', 'Lone Peak': 'Highland, UT', 'Mountain Crest': 'Hyrum, UT', 'Davis': 'Kaysville, UT', 'Kearns': 'Kearns, UT', 'Lehi': 'Lehi, UT', 'Skyridge': 'Lehi, UT', 'Hillcrest': 'Midvale, UT', 'Ridgeline': 'Millville, UT', 'Green Canyon': 'North Logan, UT', 'Ogden': 'Ogden, UT', 'Orem': 'Orem, UT', 'Timpanogos': 'Orem, UT', 'Payson': 'Payson, UT', 'Pleasant Grove': 'Pleasant Grove, UT', 'Carbon': 'Price, UT', 'Provo': 'Provo, UT', 'Timpview': 'Provo, UT', 'Riverton': 'Riverton, UT',
+             'Salem Hills': 'Salem, UT', 'Alta': 'Sandy, UT', 'Westlake': 'Saratoga Springs, UT', 'Sky View': 'Smithfield, UT', 'Bingham': 'South Jordan, UT', 'Mountain Star': 'South Ogden, UT', 'Maple Mountain': 'Spanish Fork, UT', 'Spanish Fork': 'Spanish Fork, UT', 'Springville': 'Springville, UT', 'Stansbury': 'Stansbury, UT', 'Deseret Peak': 'Tooele, UT', 'Tooele': 'Tooele, UT', 'Uintah': 'Vernal, UT', 'Copper Hills': 'West Jordan, UT', 'West Jordan': 'West Jordan, UT', 'High Desert': 'Ammon, ID', 'Nampa': 'Nampa ID', 'Idaho Falls': 'Idaho Falls, ID', 'Columbia': 'Nampa, ID', 'Skyview (ID)': 'Nampa ID', 'Century': 'Pocatello, ID', 'Pocatello': 'Pocatello, ID', 'Timberline': 'Boise, ID', 'Madison': 'Rexburg, ID', 'Highland': 'Pocatello, ID', 'Orem City': 'Orem, UT', 'Grand County': 'Moab, UT', 'Roy': 'Roy, UT', 'Murray': 'Murray, UT', 'Fremont': 'Plain City, UT', 'Mountain View': 'Meridian, ID', 'Capital': 'Boise, ID', 'Fruitland': 'Fruitland, ID', 'Kelly Walsh': 'Casper, WY', 'Blackfoot': 'Blackfoot, ID', 'Centennial': 'Boise, ID'}
 
-#print("i'm in too")
 @dataclass
 class RecapHeader:
     '''A simple data container that stores the header information extracted from a recap table. It holds the division name, caption lists, judge names, and raw table headers, along with an optional list of renamed headers. Depends on List from typing and field from dataclasses.'''
@@ -55,8 +54,7 @@ class RecapPage:
             raise RuntimeError("Call fetch() before parse_header().")
 
         division = self._table_rows[0].get_text(strip=True)
-        test = self._extract_row_text(6)
-        #print(test)
+        
         captions = self._extract_row_text(2)
         sub_captions = self._extract_row_text(3)
         judges = self._extract_row_text(4)
@@ -69,14 +67,16 @@ class RecapPage:
             judges=judges,
             table_headers=table_headers,
         )
-        #####print(self.url, "------", self.header)
+
         return self.header
     #########################
 
 
+
+
     def parse_scores(self, first_data_row: int = 6) -> List[List[str]]:
         '''Iterates over data rows starting at first_data_row, parses each with _parse_score_row, and returns a list of score rows. Skips rows with too few <td> cells. Depends on _table_rows, _parse_score_row, List.'''
-        #print("First Row: ", first_data_row)
+        
         if self._table is None or not self._table_rows:
             raise RuntimeError("Call fetch() before parse_scores().")
 
@@ -85,7 +85,7 @@ class RecapPage:
         for idx, row in enumerate(self._table_rows[first_data_row:], start=first_data_row):
             # Look only at top-level cells, same as _parse_score_row
             outer_cells = row.find_all("td", recursive=False)
-            #print(outer_cells)
+            
             # Skip rows that don't have at least school + city/state
             if len(outer_cells) < 2:
                 # Optional debug:
@@ -93,7 +93,7 @@ class RecapPage:
                 continue
 
             parsed = self._parse_score_row(row)
-            #print(f'PRE_CHECK: {parsed}')
+
 
 
             def is_number(value: str) -> bool:
@@ -104,14 +104,12 @@ class RecapPage:
                     return False
                 
             if is_number(parsed[1]):
-                #print(f'BEFORE: {parsed}')
                 parsed.insert(1, CITY_DICT[parsed[0]])
                 parsed.insert(2, parsed[2][:2])
                 parsed[3] = parsed[3][-1]
             
             if len(parsed) >= 3:
                 data_rows.append(parsed)
-
         return data_rows
 
 
@@ -136,9 +134,7 @@ class RecapPage:
             else:
                 text = cell.get_text(strip=True)
                 if text:
-                #    print(f'OTHER_TEXT: {text}')
                     values.append(text)
-
         return values
 
 ########################################
@@ -173,12 +169,10 @@ class RecapPage:
         texts = [
             cell.get_text(strip=True)
             for cell in row.find_all(["th", "td"])
-        ]
+            ]
         # filter out empty values
         return [t for t in texts if t]
     
-    
-
 class TransformHeader:
     '''Builds standardized column names for recap score tables. It generates prefixes from sub-captions and rewrites raw headers into structured score/rank fields.'''
 
@@ -197,7 +191,7 @@ class TransformHeader:
             prefix = "".join(first_chunks)
             prefix_list.append(prefix)
         return prefix_list
-    
+
     def update_header(self, header: RecapHeader) -> List[str]:
         '''Rebuilds all table headers using captions, prefixes, and fixed block rules. Outputs renamed, structured headers for downstream DataFrame use. Depends on RecapHeader, _build_prefix_list, and string/list operations.'''
         captions_list = header.captions
@@ -218,7 +212,7 @@ class TransformHeader:
             (3, 5, 4, True),   # Color Guard + ColGua
             #(5, 6, 2, False),   # Penalties + Pen
         ]
-        #print(blocks)
+
         new_headers = []
         idx = 0  # pointer into table_header_list
 
@@ -238,7 +232,7 @@ class TransformHeader:
             else:
                 judge_cols = cols
                 total_col = None
-            #print(f'PRINT: {judge_cols}')
+
             # 1) Prefix judge columns: MusEns_Musc, MusEns_Tech, MusEns_*Tot, etc.
             for c in judge_cols:
                 new_headers.append(f'{prefix}_{c}_score')
@@ -253,8 +247,7 @@ class TransformHeader:
         # Global totals and subtotals at the very end
         new_headers.insert(0,'city/state')
         new_headers.insert(0, 'school')
-        #print(f'HEADER: {new_headers}')
-        #'''
+
         new_headers.append('SubTotal')
         new_headers.append('SubTotal_Rank')
         new_headers.append('Penalties')
@@ -263,14 +256,13 @@ class TransformHeader:
         new_headers.append('SPACER')
         new_headers.append('Total')
         new_headers.append('Rank')
-        print(f'HEADER: {len(new_headers)}')
        # '''
 
         return(new_headers)
 
 
 @staticmethod
-def load_recap(url: str) -> pd.DataFrame:
+def load_recap(url: str, header_cols) -> pd.DataFrame:
     """
     load_recap fetches the recap webpage, parses its scoring table, and returns the results as a clean pandas DataFrame.
     """
@@ -279,51 +271,59 @@ def load_recap(url: str) -> pd.DataFrame:
 
     # 1) parse header info from the table
     header = page.parse_header()
-    #print(f'HEADER: {header}')
+
     # 2) transform header names
-    transformer = TransformHeader()
-    renamed_headers = transformer.update_header(header)
-    header.renamed_headers = renamed_headers  # optional, for later reuse
+    # If header cols wasn't provided, fall back to parsing  each url
+    renamed_headers: List[dict] = []
+    if header_cols is None:
+        transformer = TransformHeader()
+        renamed_headers = transformer.update_header(header)
+        header.renamed_headers = renamed_headers  # optional, for later reuse
 
      # 3) parse data rows (scores)
     rows = page.parse_scores(first_data_row=6)
-    #print(f'ROWS: {rows}')
+
     # 4) zip headers + row values into records
-    records: List[dict] = []
+    records1: List[dict] = []
     for row_values in rows:
         if len(row_values) != len(renamed_headers):
-            # 1. Log URL
             with open("mismatched_header.txt", "a") as file:
                 file.write(f'\n{url}')
 
-            # 2. Truncate the row_values list to match renamed_headers list
+        # Combine using dictionary comprehension
+        record_dict = {header_cols[i]: row_values[i] for i in range(len(header_cols))}
 
-            # 3 Proceed
-            # This is where you want to catch structural mismatches early
-            """raise ValueError(
-                f"Header/data length mismatch: {len(renamed_headers)} headers vs "
-                f"{len(row_values)} values"
+        records1.append(record_dict)
+        df = pd.DataFrame.from_records(records1, columns=header_cols)
 
-            )
-            """
-        records.append(dict(zip(renamed_headers, row_values)))
-            # print(records)
-        df = pd.DataFrame.from_records(records)
-
+        # Add round_guid so we can join with UMEA_api metadata later
+        guid = url.rstrip("/").split("/")[-1]
+        if guid.endswith(".htm"):
+            guid = guid[:-4]
+        df["round_guid"] = guid
     return df
     
 @staticmethod
-def load_multiple_recaps(urls: List[str]) -> pd.DataFrame:
+def load_multiple_recaps(urls: List[str], header_cols: List[str]) -> pd.DataFrame:
         '''
         load_multiple_recaps takes a list of recap URLs, loads each one with load_recap, and combines all resulting DataFrames into a single DataFrame. It handles multiple recaps at once, stitching them into one unified table so you don't process or analyze each recap separately.'''
-        df_list = []
+        df_list: list[pd.DataFrame] = []
         for url in urls:
-            df = load_recap(url)
-            df = df.copy() #copy data frame
+            df = load_recap(url, header_cols=header_cols)
             df["source_url"] = url
             df_list.append(df)
-
         if not df_list:
             return pd.DataFrame()
 
         return pd.concat(df_list, ignore_index=True)
+
+def get_header_from_url(url: str) -> List[str]:
+    page = RecapPage(url)
+    page.fetch()
+
+    header = page.parse_header()
+
+    transformer = TransformHeader()
+    renamed = transformer.update_header(header)
+
+    return renamed

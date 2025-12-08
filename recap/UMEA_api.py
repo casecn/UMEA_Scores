@@ -12,9 +12,9 @@ VERSION = "1.1.5"
 CALLBACK = "jQuery110209904385531594735_1763353270252?_= 1763353270271"
 
 #'''SEASON_GUID_DICT = {'UMEA 2025': 'ff7a5f4b-b7dc-4cbc-ad0b-1295fdd971a8'}'''
-SEASON_GUID_DICT = {'UMEA 2025': 'ff7a5f4b-b7dc-4cbc-ad0b-1295fdd971a8'} #, 'UMEA 2024': '9cd94b0d-a521-4280-98e3-b42b4c4441c5', 'UMEA 2023': 'baa6c584-4547-4370-b8ca-2d05018876d7', 'UMEA 2022': '6d7e8a01-34fb-49c0-bfab-8b62c8f19930'}#, 'UMEA 2021': '871de29c-53ea-4b45-b69a-cbb245861811', 'UMEA 2020': '9e9a151d-762c-4024-aa5a-aa45930939e1', 'UMEA 2019': 'a6bbdab4-a781-4a21-850a-53d42faebe2b', 'UMEA 2018': 'ad102698-0fc8-451a-a5fd-634da78d103d', 'UMEA 2017': 'ea245774-1ae0-464d-92a9-1ddf44600c51', 'UMEA 2016': '334709e3-d486-4cda-b0fb-fbbf0d64966d', 'UMEA 2015': '26b74c10-b696-428f-8463-874b147c606d', 'UMEA 2014': '6cfb281c-6122-4115-8c3b-f0a2097aa48d'}
+SEASON_GUID_DICT = {'UMEA 2025': 'ff7a5f4b-b7dc-4cbc-ad0b-1295fdd971a8', 'UMEA 2024': '9cd94b0d-a521-4280-98e3-b42b4c4441c5', 'UMEA 2023': 'baa6c584-4547-4370-b8ca-2d05018876d7', 'UMEA 2022': '6d7e8a01-34fb-49c0-bfab-8b62c8f19930'}#, 'UMEA 2021': '871de29c-53ea-4b45-b69a-cbb245861811', 'UMEA 2020': '9e9a151d-762c-4024-aa5a-aa45930939e1', 'UMEA 2019': 'a6bbdab4-a781-4a21-850a-53d42faebe2b', 'UMEA 2018': 'ad102698-0fc8-451a-a5fd-634da78d103d', 'UMEA 2017': 'ea245774-1ae0-464d-92a9-1ddf44600c51', 'UMEA 2016': '334709e3-d486-4cda-b0fb-fbbf0d64966d', 'UMEA 2015': '26b74c10-b696-428f-8463-874b147c606d', 'UMEA 2014': '6cfb281c-6122-4115-8c3b-f0a2097aa48d'}
 
-def get_jsonp(url: str, params=None, timeout: int = 10):
+def get_jsonp(url: str, params=None, timeout: int = 30):
     """
     Call a JSONP endpoint and return parsed JSON.
     Assumes response looks like: callback123({...});
@@ -34,7 +34,6 @@ def get_jsonp(url: str, params=None, timeout: int = 10):
         raise ValueError("Response is not valid JSONP")
 
     json_str = raw[start+1:end]
-    #print(json_str)
     return json.loads(json_str)
 
 
@@ -48,12 +47,11 @@ def get_competitions_for_season(season_id: str):
         "version": VERSION,
         "callback": CALLBACK  # usually not needed; server supplies default
     }
-    #print(url)
+
     data = get_jsonp(url, params=params)
-    #print(data)
 
     competitions = data.get("competitions")
-    #print(competitions[0]) 
+
     if competitions is None:
         raise KeyError("Cannot find competitions list in API response")
 
@@ -69,7 +67,7 @@ def get_competition_results(comp_id):
     }
 
     data = get_jsonp(url, params=params)
-    #print(data)
+
     return data
 
 
@@ -78,8 +76,6 @@ def flatten_competition_results(comp_data: dict, season_name: str = None):
     Turn one competition's JSON (like the sample you provided)
     into a list of flat row dicts: one row per performance.
     """
-    #print(f'Season NAME: {season_name}')
-    #print(f'COMP_DICT: {comp_data}')
     rows: List[dict] = []
 
     # Top-level info
@@ -198,8 +194,6 @@ def build_season_scores_csv(season_id: str, season_name: str, out_path: str) -> 
     
     #Write the season's score CSV
     write_scores_csv(all_rows, out_path)
-
-    print(f'Found {len(unique_round_guids)} unique guids for {season_name}')
 
     return unique_round_guids
 
