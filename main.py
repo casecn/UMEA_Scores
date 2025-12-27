@@ -27,7 +27,7 @@ def build_recap_url(round_guids: List[str]) -> List[str]:
 def build_all_recaps_with_metadata(
         recap_urls: List[str], 
         scores_csv_path: Path,
-) -> pd.DataFrame:
+  ) -> pd.DataFrame:
     """
     1) Load all recap tables (detail rows) from recap URLs.
     2) Load high-level scores/metadata from the UMEA_api CSV.
