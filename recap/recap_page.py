@@ -4,8 +4,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup, Tag
 
-CITY_DICT = {'American Fork': 'American Fork, UT', 'Viewmont': 'Bountiful, UT', 'Gallatin': 'Bozeman, MT', 'Canyon View': 'Cedar City, UT', 'Clearfield': 'Clearfield, UT', 'Brighton': 'Cottonwood Heights, UT', 'Delta': 'Delta, UT', 'Cedar Valley': 'Eagle Mountain, UT', 'Elko': 'Elko, NV', 'Tintic': 'Eureka, UT', 'Farmington': 'Farmington, UT', 'Bear River': 'Garland, UT', 'Wasatch': 'Heber City, UT', 'Herriman': 'Herriman, UT', 'Mountain Ridge': 'Herriman, UT', 'Lone Peak': 'Highland, UT', 'Mountain Crest': 'Hyrum, UT', 'Davis': 'Kaysville, UT', 'Kearns': 'Kearns, UT', 'Lehi': 'Lehi, UT', 'Skyridge': 'Lehi, UT', 'Hillcrest': 'Midvale, UT', 'Ridgeline': 'Millville, UT', 'Green Canyon': 'North Logan, UT', 'Ogden': 'Ogden, UT', 'Orem': 'Orem, UT', 'Timpanogos': 'Orem, UT', 'Payson': 'Payson, UT', 'Pleasant Grove': 'Pleasant Grove, UT', 'Carbon': 'Price, UT', 'Provo': 'Provo, UT', 'Timpview': 'Provo, UT', 'Riverton': 'Riverton, UT',
-             'Salem Hills': 'Salem, UT', 'Alta': 'Sandy, UT', 'Westlake': 'Saratoga Springs, UT', 'Sky View': 'Smithfield, UT', 'Bingham': 'South Jordan, UT', 'Mountain Star': 'South Ogden, UT', 'Maple Mountain': 'Spanish Fork, UT', 'Spanish Fork': 'Spanish Fork, UT', 'Springville': 'Springville, UT', 'Stansbury': 'Stansbury, UT', 'Deseret Peak': 'Tooele, UT', 'Tooele': 'Tooele, UT', 'Uintah': 'Vernal, UT', 'Copper Hills': 'West Jordan, UT', 'West Jordan': 'West Jordan, UT', 'High Desert': 'Ammon, ID', 'Nampa': 'Nampa ID', 'Idaho Falls': 'Idaho Falls, ID', 'Columbia': 'Nampa, ID', 'Skyview (ID)': 'Nampa ID', 'Century': 'Pocatello, ID', 'Pocatello': 'Pocatello, ID', 'Timberline': 'Boise, ID', 'Madison': 'Rexburg, ID', 'Highland': 'Pocatello, ID', 'Orem City': 'Orem, UT', 'Grand County': 'Moab, UT', 'Roy': 'Roy, UT', 'Murray': 'Murray, UT', 'Fremont': 'Plain City, UT', 'Mountain View': 'Meridian, ID', 'Capital': 'Boise, ID', 'Fruitland': 'Fruitland, ID', 'Kelly Walsh': 'Casper, WY', 'Blackfoot': 'Blackfoot, ID', 'Centennial': 'Boise, ID'}
+CITY_DICT = {'American Fork': 'American Fork, UT', 'Viewmont': 'Bountiful, UT', 'Gallatin': 'Bozeman, MT', 'Canyon View': 'Cedar City, UT', 'Clearfield': 'Clearfield, UT', 'Brighton': 'Cottonwood Heights, UT', 'Delta': 'Delta, UT', 'Cedar Valley': 'Eagle Mountain, UT', 'Elko': 'Elko, NV', 'Tintic': 'Eureka, UT', 'Farmington': 'Farmington, UT', 'Bear River': 'Garland, UT', 'Wasatch': 'Heber City, UT', 'Herriman': 'Herriman, UT', 'Mountain Ridge': 'Herriman, UT', 'Lone Peak': 'Highland, UT', 'Mountain Crest': 'Hyrum, UT', 'Davis': 'Kaysville, UT', 'Kearns': 'Kearns, UT', 'Lehi': 'Lehi, UT', 'Skyridge': 'Lehi, UT', 'Hillcrest': 'Midvale, UT', 'Ridgeline': 'Millville, UT', 'Green Canyon': 'North Logan, UT', 'Ogden': 'Ogden, UT', 'Orem': 'Orem, UT', 'Timpanogos': 'Orem, UT', 'Payson': 'Payson, UT', 'Pleasant Grove': 'Pleasant Grove, UT', 'Carbon': 'Price, UT', 'Provo': 'Provo, UT', 'Timpview': 'Provo, UT', 'Riverton': 'Riverton, UT','Salem Hills': 'Salem, UT', 'Alta': 'Sandy, UT', 'Westlake': 'Saratoga Springs, UT', 'Sky View': 'Smithfield, UT', 'Bingham': 'South Jordan, UT', 'Mountain Star': 'South Ogden, UT', 'Maple Mountain': 'Spanish Fork, UT', 'Spanish Fork': 'Spanish Fork, UT', 'Springville': 'Springville, UT', 'Stansbury': 'Stansbury, UT', 'Deseret Peak': 'Tooele, UT', 'Tooele': 'Tooele, UT', 'Uintah': 'Vernal, UT', 'Copper Hills': 'West Jordan, UT', 'West Jordan': 'West Jordan, UT', 'High Desert': 'Ammon, ID', 'Nampa': 'Nampa ID', 'Idaho Falls': 'Idaho Falls, ID', 'Columbia': 'Nampa, ID', 'Skyview (ID)': 'Nampa ID', 'Century': 'Pocatello, ID', 'Pocatello': 'Pocatello, ID', 'Timberline': 'Boise, ID', 'Madison': 'Rexburg, ID', 'Highland': 'Pocatello, ID', 'Orem City': 'Orem, UT', 'Grand County': 'Moab, UT', 'Roy': 'Roy, UT', 'Murray': 'Murray, UT', 'Fremont': 'Plain City, UT', 'Mountain View': 'Meridian, ID', 'Capital': 'Boise, ID', 'Fruitland': 'Fruitland, ID', 'Kelly Walsh': 'Casper, WY', 'Blackfoot': 'Blackfoot, ID', 'Centennial': 'Boise, ID'}
 
 @dataclass
 class RecapHeader:
@@ -70,9 +69,6 @@ class RecapPage:
 
         return self.header
     #########################
-
-
-
 
     def parse_scores(self, first_data_row: int = 6) -> List[List[str]]:
         '''Iterates over data rows starting at first_data_row, parses each with _parse_score_row, and returns a list of score rows. Skips rows with too few <td> cells. Depends on _table_rows, _parse_score_row, List.'''
@@ -142,7 +138,7 @@ class RecapPage:
     # ---------- Internal helpers ----------
 
     def _set_table_of_interest(self) -> None:
-        '''using soup, this functin finds all <table> elements in the soup and selects the one at self.table_index. Also caches its <tr> rows. Raises errors if soup isn’t initialized or index is invalid. Depends on BeautifulSoup, Tag, List.'''
+        '''Returns a list of <tr> tags using soup, this functin starts by finding all <table> elements in the soup and selects the one at self.table_index. Also caches its <tr> rows. Raises errors if soup isn’t initialized or index is invalid. Depends on BeautifulSoup, Tag, List.'''
         if self._soup is None:
             raise RuntimeError("Soup has not been created yet.")
 
@@ -320,10 +316,24 @@ def load_multiple_recaps(urls: List[str], header_cols: List[str]) -> pd.DataFram
 def get_header_from_url(url: str) -> List[str]:
     page = RecapPage(url)
     page.fetch()
-
     header = page.parse_header()
-
     transformer = TransformHeader()
     renamed = transformer.update_header(header)
-
     return renamed
+'''
+# Unpivot csv to make analysis more efficient and visuals easier to build.
+def unpivot_df():
+    # Produce list of headers that to be split out.
+    # Unpivot the DataFrame
+   column_list = ['MusEns_Musc_score', 'MusEns_Musc_rank', 'MusEns_Tech_score', 'MusEns_Tech_rank', 'MusEns_*Tot_score', 'MusEns_*Tot_rank', 'MusEff_Rep_score', 'MusEff_Rep_rank', 'MusEff_Perf_score', 'MusEff_Perf_rank', 'MusEff_*Tot_score', 'MusEff_*Tot_rank', 'Music_Total', 'Music_Rank', 'VisEns_Comp_score', 'VisEns_Comp_rank', 'VisEns_Achv_score', 'VisEns_Achv_rank', 'VisEns_*Tot_score', 'VisEns_*Tot_rank', 'VisEff_Rep_score', 'VisEff_Rep_rank', 'VisEff_Perf_score', 'VisEff_Perf_rank', 'VisEff_*Tot_score', 'VisEff_*Tot_rank', 'Visual_Total', 'Visual_Rank', 'Per_Comp_score', 'Per_Comp_rank', 'Per_Perf_score', 'Per_Perf_rank', 'Per_*Tot_score', 'Per_*Tot_rank', 'Percussion_Total', 'Percussion_Rank', 'ColGua_Voc_score', 'ColGua_Voc_rank', 'ColGua_Ach_score', 'ColGua_Ach_rank', 'ColGua_*Tot_score', 'ColGua_*Tot_rank', 'Color Guard_Total', 'Color Guard_Rank', 'SubTotal', 'SubTotal_Rank', 'Penalties', 'Penalties_Total', 'Total', 'Rank']
+   
+   df_long = pd.melt(df,
+        id_vars=['performance_guid'],
+        value_vars=column_list,
+        var_name='Subject',
+        value_name='Score')
+   print("\nUnpivoted DataFrame (Long Format):")
+   print(df_long)
+   
+   return
+'''
